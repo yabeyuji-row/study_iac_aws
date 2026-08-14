@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -ldflags \"-X main.version=${APP_VERSION:-dev} -X main.commit=${APP_COMMIT:-unknown} -X main.buildTime=${APP_BUILD_TIME:-unknown}\" -o ./tmp/api ./cmd/api"
+entrypoint = ["./tmp/api"]
+include_ext = ["go", "html", "css", "js"]
+include_dir = ["cmd", "internal"]
+exclude_dir = ["bin", "tmp", ".git", "docs"]
+exclude_file = []
+exclude_regex = ["_test.go"]
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+kill_delay = 1000
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true

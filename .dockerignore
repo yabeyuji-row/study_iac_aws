@@ -1,0 +1,17 @@
+.git
+.github
+.terraform
+**/.terraform
+.env
+.env.*
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+tmp
+bin
+coverage.out
+postgres_data
+go_mod_cache
+go_build_cache
+ministack_state
+ministack_s3

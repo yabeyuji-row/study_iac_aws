@@ -1,0 +1,46 @@
+# Environment and secrets
+.env
+.env.*
+!/.env.example
+*.pem
+*.key
+
+# Terraform
+.terraform/
+.rover-tmp/
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
+*.auto.tfvars
+*.auto.tfvars.json
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Go
+bin/
+dist/
+tmp/
+*.test
+*.prof
+coverage.out
+coverage.html
+
+# Logs
+*.log
+
+# Local tools and editors
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

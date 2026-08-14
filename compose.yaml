@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: todo_api
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo -d todo_api"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        VERSION: local
+        COMMIT: local
+        BUILD_TIME: local
+    environment:
+      HTTP_ADDR: ":8080"
+      DATABASE_URL: "postgres://todo:todo_password@postgres:5432/todo_api?sslmode=disable"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - go_mod_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    stop_grace_period: 15s
+
+volumes:
+  postgres_data:
+  go_mod_cache:
+  go_build_cache:

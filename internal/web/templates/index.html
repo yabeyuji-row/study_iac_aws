@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="{{ .Lang }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="{{ .StylesPath }}">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="toolbar" aria-label="TODO controls">
+        <div>
+          <h1>{{ .Heading }}</h1>
+          <p id="summary">0 items</p>
+        </div>
+        <div class="filters">
+          <select id="statusFilter" aria-label="status filter">
+            <option value="">All</option>
+            {{ range .Statuses }}
+            <option value="{{ .Value }}">{{ .Label }}</option>
+            {{ end }}
+          </select>
+          <button id="refreshButton" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="todoForm" class="editor">
+          <input id="titleInput" name="title" maxlength="200" required
+            placeholder="Title">
+          <textarea id="descriptionInput" name="description" maxlength="2000"
+            placeholder="Description"></textarea>
+          <div class="form-row">
+            <select id="statusInput" name="status">
+              {{ range .Statuses }}
+              <option value="{{ .Value }}">{{ .Label }}</option>
+              {{ end }}
+            </select>
+            <input id="dueDateInput" name="due_date" type="datetime-local">
+          </div>
+          <div class="actions">
+            <button id="cancelButton" type="button" hidden>Cancel</button>
+            <button id="submitButton" type="submit">Add</button>
+          </div>
+        </form>
+
+        <section class="list-pane" aria-label="TODO list">
+          <div id="message" class="message" role="status"></div>
+          <ul id="todoList" class="todo-list"></ul>
+          <button id="loadMoreButton" class="load-more" type="button" hidden>
+            Load more
+          </button>
+        </section>
+      </section>
+    </main>
+
+    <template id="todoTemplate">
+      <li class="todo-item">
+        <div class="todo-main">
+          <div class="todo-title"></div>
+          <div class="todo-description"></div>
+          <div class="todo-meta"></div>
+        </div>
+        <div class="item-actions">
+          <button class="edit-button" type="button">Edit</button>
+          <button class="delete-button" type="button">Delete</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="{{ .ScriptPath }}" defer></script>
+  </body>
+</html>

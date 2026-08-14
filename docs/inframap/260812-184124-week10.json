@@ -1,0 +1,88 @@
+{
+  "aws_db_instance.app": {
+    "allocated_storage": "${var.db_allocated_storage}",
+    "apply_immediately": false,
+    "auto_minor_version_upgrade": true,
+    "backup_retention_period": "${var.db_backup_retention_days}",
+    "backup_window": "17:00-18:00",
+    "copy_tags_to_snapshot": true,
+    "db_name": "${var.db_name}",
+    "db_subnet_group_name": "${aws_db_subnet_group.app.name}",
+    "deletion_protection": false,
+    "enabled_cloudwatch_logs_exports": [
+      "postgresql",
+      "upgrade"
+    ],
+    "engine": "postgres",
+    "engine_version": "${var.db_engine_version}",
+    "final_snapshot_identifier": "${local.name_prefix}",
+    "iam_database_authentication_enabled": true,
+    "identifier": "${local.name_prefix}",
+    "instance_class": "${var.db_instance_class}",
+    "maintenance_window": "sun:18:00-sun:19:00",
+    "max_allocated_storage": "${var.db_max_allocated_storage}",
+    "multi_az": false,
+    "parameter_group_name": "${aws_db_parameter_group.app.name}",
+    "port": "${var.db_port}",
+    "publicly_accessible": false,
+    "skip_final_snapshot": false,
+    "storage_encrypted": true,
+    "storage_type": "gp3",
+    "tags": "${local.common_tags}",
+    "username": "${var.db_username}",
+    "vpc_security_group_ids": [
+      "${aws_security_group.rds.id}"
+    ]
+  },
+  "aws_ecs_cluster.api": {
+    "name": "${local.name_prefix}",
+    "tags": "${local.common_tags}"
+  },
+  "aws_ecs_service.api": {
+    "cluster": "${aws_ecs_cluster.api.id}",
+    "depends_on": [
+      "${aws_lb_listener.http}"
+    ],
+    "deployment_circuit_breaker": [
+      {
+        "enable": true,
+        "rollback": true
+      }
+    ],
+    "deployment_maximum_percent": "${var.ecs_deployment_maximum_percent}",
+    "deployment_minimum_healthy_percent": "${var.ecs_deployment_minimum_healthy_percent}",
+    "desired_count": "${var.ecs_desired_count}",
+    "health_check_grace_period_seconds": 60,
+    "launch_type": "FARGATE",
+    "load_balancer": [
+      {
+        "container_name": "api",
+        "container_port": "${var.app_port}",
+        "target_group_arn": "${aws_lb_target_group.api.arn}"
+      }
+    ],
+    "name": "${local.name_prefix}",
+    "network_configuration": [
+      {
+        "assign_public_ip": false,
+        "security_groups": [
+          "${aws_security_group.ecs.id}"
+        ],
+        "subnets": "${aws_subnet.private}"
+      }
+    ],
+    "tags": "${local.common_tags}",
+    "task_definition": "${aws_ecs_task_definition.api.arn}"
+  },
+  "aws_lb.app": {
+    "drop_invalid_header_fields": true,
+    "internal": false,
+    "load_balancer_type": "application",
+    "name": "${local.name_prefix}",
+    "security_groups": [
+      "${aws_security_group.alb.id}"
+    ],
+    "subnets": "${aws_subnet.public}",
+    "tags": "${local.common_tags}"
+  }
+}

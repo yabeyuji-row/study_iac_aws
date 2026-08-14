@@ -1,0 +1,12 @@
+# 手動編集: 可 - S3 backend を有効化するときの例として使う。
+# このファイルは example であり、Terraform は .tf.example を読み込まない。
+# 実際に使う場合は値を確認し、backend.tf にコピーしてから terraform init を実行する。
+
+terraform {
+  backend "s3" {
+    bucket = "replace-with-state-bucket-name"
+    key    = "app/dev/terraform.tfstate"
+    region = "ap-northeast-1"
+  }
+}
+
