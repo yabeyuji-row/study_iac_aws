@@ -94,3 +94,19 @@
 
 - 12週目では実 AWS resource の create、restore、destroy は行っていない。
 - AWS apply 後は `docs/operations/cleanup-checklist.md` に沿って残課金 resource を確認する。
+
+## AWS Follow-up Tasks
+
+12週目までの完了チェックは、ローカル、MiniStack、GitHub、または机上演習で確認できる範囲を示す。
+次の項目は AWS 実環境でのみ本番相当の確認ができるため、未完了の follow-up として扱う。
+
+| Task | Source | Status |
+| --- | --- | --- |
+| VPC、subnet、route table、security group、IAM role の実 AWS 反映確認 | `docs/learning-roadmap.md` 7-4 | Open |
+| ECR push、ECS Fargate 起動、ALB target health、CloudWatch Logs 出力確認 | `docs/learning-roadmap.md` 8-4 | Open |
+| RDS private 配置、Secrets Manager 経由の DB 接続、backup 設定確認 | `docs/learning-roadmap.md` 9-4 | Open |
+| GitHub Actions OIDC、ECR push、manual gated ECS deploy の実 AWS 確認 | `docs/learning-roadmap.md` 10-4 | Open |
+| CloudWatch alarm、dashboard、runbook の実 AWS 確認 | `docs/learning-roadmap.md` 11-4 | Open |
+| RDS snapshot/restore/PITR、drift、cost、cleanup の実 AWS 確認 | `docs/learning-roadmap.md` 12-4 | Open |
+
+AWS follow-up を実行する前に、対象 resource、概算コスト、停止影響、戻し方、削除手順を確認し、明示的な承認を得る。
