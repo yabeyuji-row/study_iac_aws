@@ -48,9 +48,10 @@
 			"server": "localhost",
 			"port": 5432,
 			"driver": "PostgreSQL",
-			"name": "a",
-			"database": "d",
-			"username": "f"
+			"name": "docker-postgres",
+			"database": "todo_api",
+			"password": "todo_password",
+			"username": "todo"
 		}
 	]
 }
