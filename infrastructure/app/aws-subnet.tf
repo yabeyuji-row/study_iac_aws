@@ -107,8 +107,8 @@ resource "aws_route" "public_internet" {
 # 各 public subnet を public route table に関連付ける。
 # これにより public subnet 内のリソースは Internet Gateway への経路を持つ。
 resource "aws_route_table_association" "public" {
-  for_each = aws_subnet.public
+  for_each = local.public_subnets
 
-  subnet_id      = each.value.id
+  subnet_id      = aws_subnet.public[each.key].id
   route_table_id = aws_route_table.public.id
 }
