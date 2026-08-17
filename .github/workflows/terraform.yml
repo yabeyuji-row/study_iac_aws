@@ -1,0 +1,71 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform checks
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_EC2_METADATA_DISABLED: "true"
+      TF_INPUT: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Prepare dev tfvars
+        run: cp infrastructure/app/envs/dev.tfvars.example infrastructure/app/envs/dev.tfvars
+
+      - name: Terraform init
+        run: make terraform-init
+
+      - name: Terraform fmt
+        run: terraform -chdir=infrastructure/app fmt -check -recursive
+
+      - name: Terraform validate
+        run: make terraform-validate
+
+      - name: TFLint init
+        run: make terraform-tflint-init TFLINT=tflint
+
+      - name: TFLint
+        run: make terraform-tflint TFLINT=tflint
+
+      - name: Checkov
+        run: make terraform-security
+
+      - name: Terraform plan
+        run: |
+          terraform -chdir=infrastructure/app plan \
+            -input=false \
+            -refresh=false \
+            -no-color \
+            -var-file=envs/dev.tfvars > terraform-plan.txt
+
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: terraform-plan.txt
+          if-no-files-found: error

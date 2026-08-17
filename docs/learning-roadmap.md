@@ -265,6 +265,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 
 - [x] 7-3-6. [ローカル] 演習で見つかった検出可否と人手レビュー観点を docs に記録する。
 
+#### AWS 実環境確認
+
+- [ ] 7-4-1. [AWS] VPC、public/private subnet、internet gateway、route table association が設計どおり作成されることを AWS console または AWS CLI で確認する。
+	- 実行前に作成 resource、概算コスト、削除手順を確認し、明示的な承認を得る。
+
+- [ ] 7-4-2. [AWS] ALB、ECS、RDS security group の ingress/egress が Terraform 設計どおりで、意図しない `0.0.0.0/0` や相互参照漏れがないことを確認する。
+	- MiniStack では実通信制御の確認としない。
+
+- [ ] 7-4-3. [AWS] ECS task execution role と task role の trust policy、attached policy、secret read scope が最小権限になっていることを IAM Access Analyzer または AWS CLI で確認する。
+	- 確認後、不要 resource が残る場合は cleanup checklist に沿って片付ける。
+
 ## 8週目
 
 ### 要件
@@ -355,6 +366,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 
 - [x] 8-3-4. [ローカル] すべての一時変更を戻し、Docker build と Terraform 検証が成功することを確認する。
 
+#### AWS 実環境確認
+
+- [ ] 8-4-1. [AWS] ECR repository に image を push し、tag immutability と lifecycle policy が想定どおり設定されていることを確認する。
+	- 実行前に ECR storage cost と削除手順を確認し、明示的な承認を得る。
+
+- [ ] 8-4-2. [AWS] ECS Fargate service を起動し、running task count、task definition revision、container health check、CloudWatch Logs 出力を確認する。
+	- MiniStack の ECS API 作成確認は Fargate 実行確認の代替にしない。
+
+- [ ] 8-4-3. [AWS] ALB DNS name から `/healthz` と `/readyz` に到達でき、target group health check が healthy になることを確認する。
+	- 確認後、不要 resource が残る場合は cleanup checklist に沿って片付ける。
+
 ## 9週目
 
 ### 要件
@@ -443,6 +465,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 
 - [x] 9-3-4. [ローカル] すべての一時変更を戻し、Go test と Terraform 検証が成功することを確認する。
 
+#### AWS 実環境確認
+
+- [ ] 9-4-1. [AWS] RDS PostgreSQL instance が private subnet に配置され、publicly accessible が `false` であることを確認する。
+	- 実行前に RDS instance、storage、backup、Secrets Manager の概算コストと削除手順を確認し、明示的な承認を得る。
+
+- [ ] 9-4-2. [AWS] ECS task から Secrets Manager secret を読み込み、RDS へ接続して `/readyz` が成功することを確認する。
+	- secret 値、password、接続文字列をログや artifact に出さない。
+
+- [ ] 9-4-3. [AWS] RDS backup retention、maintenance window、deletion protection、final snapshot 方針が Terraform 設計どおり反映されていることを確認する。
+	- 確認後、不要 resource が残る場合は cleanup checklist に沿って片付ける。
+
 ## 10週目
 
 ### 要件
@@ -524,6 +557,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 
 - [x] 10-3-5. [ローカル] すべての一時変更を戻し、workflow lint とローカル test が成功することを確認する。
 
+#### AWS 実環境確認
+
+- [ ] 10-4-1. [AWS/GitHub] GitHub Actions OIDC が AWS role を assume でき、静的 AWS access key なしで認証できることを確認する。
+	- 実行前に対象 role、権限、戻し方を確認し、明示的な承認を得る。
+
+- [ ] 10-4-2. [AWS/GitHub] ECR push workflow が expected branch/tag/manual dispatch 条件でのみ image を push することを確認する。
+	- workflow logs と artifacts に secret が出ていないことを確認する。
+
+- [ ] 10-4-3. [AWS/GitHub] manual dispatch と `dev` environment approval gate 後にだけ ECS service update が実行され、rollback 手順で戻せることを確認する。
+	- 確認後、不要 image や一時 task definition revision を cleanup 対象に入れる。
+
 ## 11週目
 
 ### 要件
@@ -600,6 +644,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 	- 一時変更を戻し、Go test と Terraform 検証を通す。
 
 - [x] 11-3-5. [ローカル] 一時変更を戻し、Go test と Terraform 検証が成功することを確認する。
+
+#### AWS 実環境確認
+
+- [ ] 11-4-1. [AWS] CloudWatch Logs log group、metric filter、alarm、dashboard が作成され、対象 ALB/ECS/RDS metric を参照していることを確認する。
+	- 実行前に CloudWatch Logs、alarm、dashboard、Container Insights の概算コストと削除手順を確認し、明示的な承認を得る。
+
+- [ ] 11-4-2. [AWS] target unhealthy、ALB 5xx、DB readiness failure の少なくとも1つを安全な範囲で発生させ、alarm state と runbook の一次確認手順を確認する。
+	- 本番相当の停止影響、戻し方、通知先を事前に確認する。
+
+- [ ] 11-4-3. [AWS] CloudWatch dashboard で request count、target health、ECS running task count、RDS CPU/storage/connections が見えることを確認する。
+	- 確認後、不要 resource が残る場合は cleanup checklist に沿って片付ける。
 
 ## 12週目
 
@@ -686,3 +741,17 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 - [x] 12-3-5. [ローカル] postmortem template に仮想障害を記入し、再発防止 action を作る。
 
 - [x] 12-3-6. [ローカル/AWS] cleanup checklist に沿って、残課金 resource がないか確認する手順を読む。
+
+#### AWS 実環境確認
+
+- [ ] 12-4-1. [AWS] RDS manual snapshot を作成し、snapshot completed を確認する。
+	- 実行前に対象 DB、snapshot 名、概算コスト、削除手順、戻し方を確認し、明示的な承認を得る。
+
+- [ ] 12-4-2. [AWS] RDS snapshot restore または PITR を検証用 DB instance に対して実施し、復旧後の endpoint 切替手順と ECS task 再起動手順を確認する。
+	- 既存 DB を上書きしない。検証用 DB の停止時間、追加コスト、削除手順を事前に確認する。
+
+- [ ] 12-4-3. [AWS] `terraform plan -refresh-only -detailed-exitcode` で実 AWS resource の drift を確認し、差分がある場合は Terraform configuration、state、実 resource のどれを正とするか記録する。
+	- drift 修正で resource を変更する場合は別途承認を得る。
+
+- [ ] 12-4-4. [AWS] cost review checklist と cleanup checklist を AWS console または AWS CLI で実行し、残課金 resource と削除予定を記録する。
+	- `terraform destroy` は明示的な承認後のみ実行する。

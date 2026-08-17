@@ -44,3 +44,4 @@ coverage.html
 # OS files
 .DS_Store
 Thumbs.db
+.favorites.json

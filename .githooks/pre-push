@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+staged_files="$(mktemp)"
+trap 'rm -f "$staged_files"' EXIT HUP INT TERM
+
+git diff --cached --name-only -z > "$staged_files"
+
+echo "Running make lint before push..."
+if make lint; then
+	echo "make lint passed."
+	exit 0
+fi
+
+echo "make lint failed. Unstaging currently staged changes..."
+if [ -s "$staged_files" ]; then
+	git restore --staged --pathspec-from-file="$staged_files" --pathspec-file-nul
+	echo "Staged changes were unstaged."
+else
+	echo "No staged changes to unstage."
+fi
+
+exit 1
