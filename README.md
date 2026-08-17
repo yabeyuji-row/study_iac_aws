@@ -1,12 +1,13 @@
-# TODO API Learning Project
+# TODO API 学習プロジェクト
 
-This repository is a phased learning project for building a production-like TODO
-REST API with Go, Echo v4, PostgreSQL, Docker, AWS, Terraform, GitHub Actions,
-observability, SRE, security, backup and recovery, and cost management.
+このリポジトリは、Go、Echo v4、PostgreSQL、Docker、AWS、Terraform、
+GitHub Actions、オブザーバビリティ、SRE、セキュリティ、バックアップと
+リカバリ、コスト管理を使って、本番環境に近い TODO REST API を段階的に
+構築するための学習プロジェクトです。
 
-Current phase: Phase 5, SRE and operations.
+現在のフェーズ: Phase 5、SRE と運用。
 
-## Architecture
+## アーキテクチャ
 
 ```text
 Client
@@ -20,70 +21,72 @@ Go REST API
 Amazon RDS for PostgreSQL
 ```
 
-## Local Startup
+## ローカル起動
 
-Start PostgreSQL, MiniStack, run migrations, and then start the API:
+PostgreSQL と MiniStack を起動し、マイグレーションを実行してから API を
+起動します。
 
 ```bash
 make local-up
 ```
 
-The API runs in the foreground. Stop it with `Ctrl+C`, then stop PostgreSQL and
-MiniStack:
+API はフォアグラウンドで起動します。`Ctrl+C` で停止してから、PostgreSQL と
+MiniStack を停止します。
 
 ```bash
 make local-down
 ```
 
-Start only PostgreSQL:
+PostgreSQL だけを起動する場合:
 
 ```bash
 make postgres-up
 ```
 
-Start only MiniStack:
+MiniStack だけを起動する場合:
 
 ```bash
 make ministack-up
 ```
 
-Start only the API:
+API だけを起動する場合:
 
 ```bash
 make api-up
 ```
 
-`make api-up` expects PostgreSQL to be running and migrations to be applied.
+`make api-up` は、PostgreSQL が起動済みで、マイグレーションが適用済みである
+ことを前提にしています。
 
-Alternatively, start PostgreSQL and the API with Docker Compose:
+別の方法として、Docker Compose で PostgreSQL と API を起動できます。
 
 ```bash
 make compose-up
 ```
 
-Run migrations:
+マイグレーションを実行します。
 
 ```bash
 make migrate-up
 ```
 
-Run the API with Air hot reload:
+Air のホットリロード付きで API を起動します。
 
 ```bash
 make dev
 ```
 
-The API listens on `http://localhost:8080` by default. If the API is already
-running before migrations are applied, apply migrations before sending TODO
-requests.
+API はデフォルトで `http://localhost:8080` をリッスンします。マイグレーションを
+適用する前に API がすでに起動している場合は、TODO リクエストを送る前に
+マイグレーションを適用してください。
 
-If Air is not installed locally:
+Air がローカルにインストールされていない場合:
 
 ```bash
 make install-air
 ```
 
-Open the local TODO UI in your browser:
+ローカルの TODO UI をブラウザで開きます。
 
 ```bash
 make open
@@ -91,7 +94,7 @@ make open
 
 ## API
 
-Implemented endpoints:
+実装済みエンドポイント:
 
 ```text
 POST   /v1/todos
@@ -104,14 +107,14 @@ GET    /readyz
 GET    /version
 ```
 
-The API implements the `/v1/todos` CRUD endpoints and operational endpoints for
-health, readiness, and build version checks.
+この API は `/v1/todos` の CRUD エンドポイントと、ヘルスチェック、
+準備状態、ビルドバージョン確認のための運用エンドポイントを実装しています。
 
-The detailed API design is in [docs/design/api-design.md](docs/design/api-design.md).
+詳細な API 設計は [API 設計](docs/design/api-design.md) にあります。
 
-## Curl Examples
+## Curl 例
 
-Create a TODO:
+TODO を作成します。
 
 ```bash
 curl -sS -X POST http://localhost:8080/v1/todos \
@@ -124,19 +127,19 @@ curl -sS -X POST http://localhost:8080/v1/todos \
   }'
 ```
 
-List TODOs:
+TODO 一覧を取得します。
 
 ```bash
 curl -sS 'http://localhost:8080/v1/todos?limit=20&sort=created_at_desc'
 ```
 
-Get a TODO:
+TODO を取得します。
 
 ```bash
 curl -sS http://localhost:8080/v1/todos/{todo_id}
 ```
 
-Update a TODO:
+TODO を更新します。
 
 ```bash
 curl -sS -X PUT http://localhost:8080/v1/todos/{todo_id} \
@@ -150,13 +153,13 @@ curl -sS -X PUT http://localhost:8080/v1/todos/{todo_id} \
   }'
 ```
 
-Delete a TODO:
+TODO を削除します。
 
 ```bash
 curl -i -X DELETE http://localhost:8080/v1/todos/{todo_id}
 ```
 
-## Tests And Lint
+## テストと Lint
 
 ```bash
 make test
@@ -166,23 +169,24 @@ make vuln
 make build
 ```
 
-Repository tests use real PostgreSQL when `TEST_DATABASE_URL` is set:
+`TEST_DATABASE_URL` が設定されている場合、リポジトリテストは実際の PostgreSQL を
+使用します。
 
 ```bash
 TEST_DATABASE_URL='postgres://todo:todo_password@localhost:5432/todo_api?sslmode=disable' \
   go test ./internal/todo -run TestPostgresRepositoryCRUD
 ```
 
-Install `govulncheck` first if it is not available locally:
+`govulncheck` がローカルで利用できない場合は、先にインストールしてください。
 
 ```bash
 go install golang.org/x/vuln/cmd/govulncheck@latest
 ```
 
-## Migrations
+## マイグレーション
 
-SQL-file-based migrations are explicit commands and do not run unconditionally
-on API startup.
+SQL ファイルベースのマイグレーションは明示的なコマンドで実行します。API 起動時に
+無条件で実行されることはありません。
 
 ```bash
 make migrate-up
@@ -191,19 +195,19 @@ make migrate-down
 
 ## Docker
 
-Build the API image:
+API イメージをビルドします。
 
 ```bash
 make docker-build
 ```
 
-Run local PostgreSQL and API:
+ローカルの PostgreSQL と API を起動します。
 
 ```bash
 make compose-up
 ```
 
-Run each service separately:
+各サービスを個別に起動します。
 
 ```bash
 make postgres-up
@@ -211,16 +215,16 @@ make ministack-up
 make api-up
 ```
 
-Run PostgreSQL, MiniStack, migrations, and the API together:
+PostgreSQL、MiniStack、マイグレーション、API をまとめて起動します。
 
 ```bash
 make local-up
 ```
 
-The Compose API service uses Air and reloads when Go templates, Go files, HTML,
-CSS, or JavaScript files change.
+Compose の API サービスは Air を使用し、Go テンプレート、Go ファイル、HTML、
+CSS、JavaScript ファイルが変更されるとリロードします。
 
-Stop local services:
+ローカルサービスを停止します。
 
 ```bash
 make compose-down
@@ -228,8 +232,8 @@ make compose-down
 
 ## MiniStack
 
-MiniStack provides a local AWS-compatible endpoint for learning and partial
-integration checks.
+MiniStack は、学習と一部の統合チェックに使うローカルの AWS 互換エンドポイントを
+提供します。
 
 ```bash
 make ministack-up
@@ -237,14 +241,15 @@ make ministack-health
 make ministack-down
 ```
 
-See [MiniStack setup](docs/ministack-setup.md) for the Terraform provider
-override example and the boundary between MiniStack checks and real AWS checks.
+Terraform プロバイダーの override 例と、MiniStack でのチェックと実 AWS での
+チェックの境界については、[MiniStack セットアップ](docs/ministack-setup.md) を参照して
+ください。
 
 ## Terraform
 
-Application Terraform lives under `infrastructure/app/`. The local validation
-flow uses `envs/dev.tfvars` and dummy AWS credentials for MiniStack-compatible
-planning.
+アプリケーション用 Terraform は `infrastructure/app/` 配下にあります。ローカルの
+検証フローでは、MiniStack 互換の plan のために `envs/dev.tfvars` とダミーの AWS
+認証情報を使用します。
 
 ```bash
 cp infrastructure/app/envs/dev.tfvars.example infrastructure/app/envs/dev.tfvars
@@ -256,59 +261,59 @@ make terraform-security
 make terraform-plan
 ```
 
-See [Terraform file overview](docs/terraform-file-overview.md) and
-[MiniStack Terraform app checks](docs/ministack-terraform-app.md).
+[Terraform ファイル概要](docs/terraform-file-overview.md) と
+[MiniStack Terraform アプリチェック](docs/ministack-terraform-app.md) も参照してください。
 
-Do not run `terraform apply` or `terraform destroy` without explicit approval.
+明示的な承認なしに `terraform apply` や `terraform destroy` を実行しないでください。
 
-## AWS Deployment
+## AWS デプロイ
 
-GitHub Actions use OIDC, not static access keys.
-Image push can run from `main`, `v*` tags, or manual dispatch.
-ECS service update is gated by manual dispatch with `deploy = true` and the
-GitHub `dev` environment approval gate.
+GitHub Actions は静的アクセスキーではなく OIDC を使用します。
+イメージの push は `main`、`v*` タグ、または手動実行から行えます。
+ECS サービス更新は、`deploy = true` を指定した手動実行と GitHub の `dev`
+環境承認ゲートで保護されています。
 
-AWS operations entry points:
+AWS 運用の入口:
 
-- [RDS backup and restore](docs/operations/rds-backup-restore.md)
-- [Rollback procedures](docs/operations/rollback.md)
-- [Terraform drift handling](docs/operations/terraform-drift.md)
-- [AWS cost review checklist](docs/operations/cost-review-checklist.md)
-- [AWS cleanup checklist](docs/operations/cleanup-checklist.md)
-- [Postmortem template](docs/templates/postmortem-template.md)
+- [RDS バックアップとリストア](docs/operations/rds-backup-restore.md)
+- [ロールバック手順](docs/operations/rollback.md)
+- [Terraform drift 対応](docs/operations/terraform-drift.md)
+- [AWS コストレビュー用チェックリスト](docs/operations/cost-review-checklist.md)
+- [AWS クリーンアップ用チェックリスト](docs/operations/cleanup-checklist.md)
+- [ポストモーテムテンプレート](docs/templates/postmortem-template.md)
 
 ## CI/CD
 
-GitHub Actions workflows live under `.github/workflows/`.
-Pull request checks include workflow lint, Go tests, race tests, linting,
-vulnerability checks, Docker build, Terraform fmt/validate, TFLint, Checkov,
-and a Terraform plan artifact.
+GitHub Actions のワークフローは `.github/workflows/` 配下にあります。
+Pull Request のチェックには、ワークフロー lint、Go テスト、race テスト、lint、
+脆弱性チェック、Docker ビルド、Terraform fmt/validate、TFLint、Checkov、
+Terraform plan artifact が含まれます。
 
-Deploy workflow image push can run from `main`, `v*` tags, or manual dispatch.
-ECS service update is gated by manual dispatch with `deploy = true` and the
-GitHub `dev` environment approval gate.
+デプロイワークフローのイメージ push は `main`、`v*` タグ、または手動実行から行えます。
+ECS サービス更新は、`deploy = true` を指定した手動実行と GitHub の `dev`
+環境承認ゲートで保護されています。
 
-## Monitoring And SRE
+## 監視と SRE
 
-Initial observability uses JSON request logs, CloudWatch Logs metric filters,
-CloudWatch alarms, and a CloudWatch dashboard. See
-[Observability and SLO design](docs/design/observability-slo.md) and the
-[runbooks](docs/runbooks/).
+初期のオブザーバビリティでは、JSON リクエストログ、CloudWatch Logs metric filter、
+CloudWatch アラーム、CloudWatch ダッシュボードを使用します。
+[オブザーバビリティと SLO 設計](docs/design/observability-slo.md) と
+[ランブック](docs/runbooks/) を参照してください。
 
-For final recovery drills and review notes, see
-[Week 12 final review](docs/operations/week12-final-review.md).
+最終的なリカバリ訓練とレビュー記録については、
+[Week 12 最終レビュー](docs/operations/week12-final-review.md) を参照してください。
 
-## Cost Notice
+## コストに関する注意
 
-Do not create AWS resources before reviewing the target resources and rough
-costs. ALB, NAT Gateway, RDS, VPC endpoints, CloudWatch Logs, Secrets Manager,
-and data transfer can create ongoing charges.
+対象リソースと概算コストを確認する前に、AWS リソースを作成しないでください。
+ALB、NAT Gateway、RDS、VPC endpoint、CloudWatch Logs、Secrets Manager、
+データ転送では継続的な料金が発生する可能性があります。
 
-## Design Documents
+## 設計ドキュメント
 
-- [System overview](docs/design/system-overview.md)
-- [API design](docs/design/api-design.md)
-- [Database design](docs/design/database-design.md)
-- [AWS architecture](docs/design/aws-architecture.md)
-- [Learning roadmap](docs/learning-roadmap.md)
+- [システム概要](docs/design/system-overview.md)
+- [API 設計](docs/design/api-design.md)
+- [データベース設計](docs/design/database-design.md)
+- [AWS アーキテクチャ](docs/design/aws-architecture.md)
+- [学習ロードマップ](docs/learning-roadmap.md)
 - [ADRs](docs/adr/)
