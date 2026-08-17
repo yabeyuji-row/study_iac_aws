@@ -52,6 +52,9 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
 
+      - name: Check caller identity
+        run: aws sts get-caller-identity
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -101,6 +104,9 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
+
+      - name: Check caller identity
+        run: aws sts get-caller-identity
 
       - name: Render task definition
         run: |
