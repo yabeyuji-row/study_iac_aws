@@ -53,6 +53,7 @@ ECS deploy は `workflow_dispatch` で `deploy = true` を指定し、GitHub env
 GitHub repository variables:
 
 - `AWS_REGION`
+- `AWS_PLAN_ROLE_ARN`
 - `AWS_DEPLOY_ROLE_ARN`
 - `ECR_REPOSITORY_URL`
 - `ECS_CLUSTER`
@@ -100,6 +101,9 @@ deploy workflow は CI workflow とは独立しているため、branch protecti
 
 ### OIDC role ARN failure
 
+`aws-oidc-check.yml` は repository variable `AWS_PLAN_ROLE_ARN` に設定した Terraform output `github_plan_role_arn` を使って plan role を assume する。
+`workflow_dispatch` を default branch から実行する場合、OIDC token の `sub` は `repo:<owner>/<repo>:ref:refs/heads/<default_branch>` になり、plan role の trust policy と一致する。
+
 `AWS_DEPLOY_ROLE_ARN` を誤設定すると、`configure-aws-credentials` step で失敗する。
 ECR push と ECS deploy は実行されない。
 戻す場合は repository variable を Terraform output `github_deploy_role_arn` に戻す。
@@ -119,5 +123,4 @@ tflint --chdir=infrastructure/app
 docker run --rm -v "$PWD:/repo" bridgecrew/checkov -d /repo/infrastructure/app --framework terraform
 actionlint
 ```
-
 
