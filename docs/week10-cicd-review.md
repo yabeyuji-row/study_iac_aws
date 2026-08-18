@@ -46,7 +46,7 @@ ECS service update は対象 service に絞る。
 
 ## Deploy gate
 
-`deploy.yml` は main branch または `v*` tag push で image push できる。
+`deploy.yml` は `workflow_dispatch` で image push できる。
 ECS service update は自動実行しない。
 ECS deploy は `workflow_dispatch` で `deploy = true` を指定し、GitHub environment `dev` の承認 gate を通った場合だけ実行する。
 
@@ -123,4 +123,3 @@ tflint --chdir=infrastructure/app
 docker run --rm -v "$PWD:/repo" bridgecrew/checkov -d /repo/infrastructure/app --framework terraform
 actionlint
 ```
-
