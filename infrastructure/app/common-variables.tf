@@ -415,15 +415,15 @@ variable "tags" {
   }
 }
 
-# GitHub Actions OIDC trust を許可する repository。
+# GitHub Actions OIDC trust を許可する repository identifier。
 variable "github_repository" {
-  description = "GitHub repository allowed to assume OIDC roles, in owner/name form."
+  description = "GitHub repository identifier allowed to assume OIDC roles, in owner/name form. GitHub may include stable numeric IDs as owner@id/name@id in OIDC sub claims."
   type        = string
-  default     = "yabeyuji-row/study_iac_aws"
+  default     = "yabeyuji-row@316766040/study_iac_aws@1333772562"
 
   validation {
-    condition     = can(regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", var.github_repository))
-    error_message = "Github_repository must be in owner/name form."
+    condition     = can(regex("^[A-Za-z0-9_.-]+(@[0-9]+)?/[A-Za-z0-9_.-]+(@[0-9]+)?$", var.github_repository))
+    error_message = "Github_repository must be in owner/name form, with optional numeric IDs as owner@id/name@id."
   }
 }
 

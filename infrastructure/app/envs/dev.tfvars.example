@@ -43,7 +43,7 @@ ecs_task_cpu                           = 256
 ecs_task_memory                        = 512
 ecr_lifecycle_untagged_days            = 7
 
-github_repository         = "yabeyuji-row/study_iac_aws"
+github_repository         = "yabeyuji-row@316766040/study_iac_aws@1333772562"
 github_default_branch     = "main"
 github_deploy_environment = "dev"
 
