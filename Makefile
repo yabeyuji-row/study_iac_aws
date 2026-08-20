@@ -4,7 +4,9 @@
 	ministack-list-secrets \
 	workflow-lint \
 	migrate-up migrate-down terraform-fmt terraform-init terraform-validate \
-	terraform-plan terraform-tflint-init terraform-tflint terraform-security \
+	terraform-plan terraform-destroy-plan terraform-destroy-apply \
+	aws-ecr-empty aws-ecs-stop aws-rds-stop aws-cost-stop \
+	terraform-tflint-init terraform-tflint terraform-security \
 	terraform-inframap-hcl terraform-inframap-state terraform-inframap-html \
 	terraform-graph terraform-rover
 
@@ -24,6 +26,11 @@ TERRAFORM_AWS_ACCESS_KEY_ID ?= test
 TERRAFORM_AWS_SECRET_ACCESS_KEY ?= test
 TERRAFORM_DIR ?= infrastructure/app
 TERRAFORM_TFVARS ?= $(TERRAFORM_DIR)/envs/dev.tfvars
+TERRAFORM_DESTROY_PLAN ?= destroy.tfplan
+ECR_REPOSITORY_NAME ?= study-aws-dev-todo-api
+ECS_CLUSTER_NAME ?= study-aws-dev-cluster
+ECS_SERVICE_NAME ?= study-aws-dev-api-service
+RDS_INSTANCE_IDENTIFIER ?= study-aws-dev-postgres
 ROVER_IMAGE ?= im2nguyen/rover:latest
 ROVER_PORT ?= 9000
 INFRAMAP ?= inframap
@@ -148,6 +155,51 @@ terraform-plan:
 	AWS_SECRET_ACCESS_KEY="$(TERRAFORM_AWS_SECRET_ACCESS_KEY)" \
 	AWS_EC2_METADATA_DISABLED=true \
 	terraform -chdir=infrastructure/app plan -input=false -refresh=false -var-file=envs/dev.tfvars
+
+terraform-destroy-plan:
+	bash -c 'set -euo pipefail; \
+		if [ -f .env.aws ]; then source .env.aws; fi; \
+		terraform -chdir="$(TERRAFORM_DIR)" plan -destroy -var-file=envs/dev.tfvars -out="$(TERRAFORM_DESTROY_PLAN)"'
+
+terraform-destroy-apply:
+	bash -c 'set -euo pipefail; \
+		if [ -f .env.aws ]; then source .env.aws; fi; \
+		terraform -chdir="$(TERRAFORM_DIR)" apply "$(TERRAFORM_DESTROY_PLAN)"'
+
+aws-ecr-empty:
+	bash -c 'set -euo pipefail; \
+		if [ -f .env.aws ]; then source .env.aws; fi; \
+		image_ids="$$(aws ecr list-images \
+			--repository-name "$(ECR_REPOSITORY_NAME)" \
+			--region "$(AWS_REGION)" \
+			--query "imageIds" \
+			--output json)"; \
+		if [ "$$image_ids" = "[]" ]; then \
+			echo "ECR repository is already empty: $(ECR_REPOSITORY_NAME)"; \
+			exit 0; \
+		fi; \
+		aws ecr batch-delete-image \
+			--repository-name "$(ECR_REPOSITORY_NAME)" \
+			--region "$(AWS_REGION)" \
+			--image-ids "$$image_ids"'
+
+aws-ecs-stop:
+	bash -c 'set -euo pipefail; \
+		if [ -f .env.aws ]; then source .env.aws; fi; \
+		aws ecs update-service \
+			--cluster "$(ECS_CLUSTER_NAME)" \
+			--service "$(ECS_SERVICE_NAME)" \
+			--desired-count 0 \
+			--region "$(AWS_REGION)"'
+
+aws-rds-stop:
+	bash -c 'set -euo pipefail; \
+		if [ -f .env.aws ]; then source .env.aws; fi; \
+		aws rds stop-db-instance \
+			--db-instance-identifier "$(RDS_INSTANCE_IDENTIFIER)" \
+			--region "$(AWS_REGION)"'
+
+aws-cost-stop: aws-ecs-stop aws-rds-stop
 
 terraform-tflint-init:
 	$(TFLINT) --chdir=infrastructure/app --init
