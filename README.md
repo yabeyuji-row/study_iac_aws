@@ -273,6 +273,10 @@ GitHub Actions は静的アクセスキーではなく OIDC を使用します�
 ECS サービス更新は、`deploy = true` を指定した手動実行と GitHub の `dev`
 環境承認ゲートで保護されています。
 
+初回に AWS リソースを作成する場合は、[AWS デプロイ手順](docs/aws-deploy.md) に従います。
+NAT Gateway を使わない dev 構成では、ECS task を public subnet に配置し、
+public IP と HTTPS egress を有効にします。
+
 AWS 運用の入口:
 
 - [RDS バックアップとリストア](docs/operations/rds-backup-restore.md)

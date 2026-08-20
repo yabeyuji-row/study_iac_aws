@@ -358,6 +358,33 @@ variable "ecs_deployment_maximum_percent" {
   }
 }
 
+# ECS task を配置する subnet tier。
+# dev では NAT Gateway を避けるため public を選べるようにする。
+variable "ecs_task_subnet_tier" {
+  description = "Subnet tier for ECS tasks. Use public for low-cost dev without NAT, or private when NAT/VPC endpoints are available."
+  type        = string
+  default     = "private"
+
+  validation {
+    condition     = contains(["private", "public"], var.ecs_task_subnet_tier)
+    error_message = "Ecs_task_subnet_tier must be either private or public."
+  }
+}
+
+# public subnet 配置時に Fargate task へ public IP を割り当てるか。
+variable "ecs_assign_public_ip" {
+  description = "Assign a public IP address to ECS tasks. This is useful for low-cost dev deployments in public subnets without NAT."
+  type        = bool
+  default     = false
+}
+
+# ECS task が ECR、CloudWatch Logs、Secrets Manager などへ HTTPS で出るための egress。
+variable "ecs_allow_https_egress" {
+  description = "Allow ECS tasks to make outbound HTTPS requests for ECR pulls, CloudWatch Logs, and Secrets Manager."
+  type        = bool
+  default     = true
+}
+
 # Fargate task definition に割り当てる CPU unit。
 variable "ecs_task_cpu" {
   description = "CPU units for the ECS Fargate task definition."
