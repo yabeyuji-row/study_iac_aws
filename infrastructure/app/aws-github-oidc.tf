@@ -12,8 +12,6 @@ locals {
   github_deploy_subject = "repo:${var.github_repository}:environment:${var.github_deploy_environment}"
 }
 
-data "aws_caller_identity" "current" {}
-
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url = local.github_oidc_provider_url
 
@@ -211,7 +209,7 @@ data "aws_iam_policy_document" "github_ecs_deploy" {
       "ecs:RunTask",
     ]
     resources = [
-      "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${aws_ecs_task_definition.api.family}:*",
+      "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:task-definition/${aws_ecs_task_definition.api.family}:*",
     ]
 
     condition {

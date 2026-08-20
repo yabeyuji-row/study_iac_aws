@@ -25,6 +25,18 @@ variable "aws_region" {
   }
 }
 
+# IAM policy ARN など、plan 時に AWS API を呼ばずに account-scoped ARN を組み立てるための AWS account ID。
+variable "aws_account_id" {
+  description = "AWS account ID used to build account-scoped ARNs without calling STS during local or CI plans."
+  type        = string
+  default     = "000000000000"
+
+  validation {
+    condition     = can(regex("^[0-9]{12}$", var.aws_account_id))
+    error_message = "Aws_account_id must be a 12-digit AWS account ID."
+  }
+}
+
 # ローカル plan や MiniStack 向けに AWS 認証情報の検証を省略するかどうか。
 variable "skip_credentials_validation" {
   description = "Skip AWS credential validation for local or emulated provider usage."
