@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+run() {
+	printf '\n==> %s\n' "$*"
+	"$@"
+}
+
+format_tfvars_example() {
+	local file="$1"
+	local tmp
+
+	tmp="$(mktemp --suffix=.tfvars)"
+	cp "$file" "$tmp"
+	terraform fmt "$tmp" >/dev/null
+	cp "$tmp" "$file"
+	rm -f "$tmp"
+}
+
+printf 'Running pre-commit checks...\n'
+
+go_files="$(rg --files -g '*.go')"
+if [ -n "$go_files" ]; then
+	# shellcheck disable=SC2086
+	run gofmt -w $go_files
+fi
+
+run terraform -chdir=infrastructure/app fmt -recursive
+run terraform -chdir=infrastructure/bootstrap fmt -recursive
+
+while IFS= read -r tfvars_example; do
+	[ -n "$tfvars_example" ] || continue
+	format_tfvars_example "$tfvars_example"
+done < <(rg --files -g '*.tfvars.example' infrastructure)
+
+{
+	rg --files -0 -g '*.go'
+	rg --files -0 -g '*.tf' -g '*.tftest.hcl' -g '*.tfvars.example' infrastructure
+} | xargs -0 -r git add --
+
+run make workflow-lint
+run make lint
+run make terraform-init
+run make terraform-validate
+run make terraform-tflint-init
+run make terraform-tflint
+
+AWS_ACCESS_KEY_ID="${TERRAFORM_AWS_ACCESS_KEY_ID:-test}" \
+AWS_SECRET_ACCESS_KEY="${TERRAFORM_AWS_SECRET_ACCESS_KEY:-test}" \
+AWS_EC2_METADATA_DISABLED=true \
+	run terraform -chdir=infrastructure/app plan \
+	-input=false \
+	-refresh=false \
+	-no-color \
+	-var-file=envs/dev.tfvars.example
+
+run docker run --rm -v "$PWD:/repo" bridgecrew/checkov -d /repo/infrastructure/app --framework terraform --quiet
+
+printf '\nPre-commit checks passed.\n'
