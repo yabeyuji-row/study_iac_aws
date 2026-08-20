@@ -38,7 +38,8 @@
 		"urllib",
 		"urlopen",
 		"valyala",
-		"Yabe"
+		"Yabe",
+		"yabeyuji"
 	],
 	"liveServer.settings.port": 5502,
 	"sqltools.connections": [
