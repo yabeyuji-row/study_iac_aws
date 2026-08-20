@@ -2,9 +2,9 @@
 # Example values for local Terraform validation and plan review.
 # Copy this file to dev.tfvars before running plan, and do not commit real values.
 
-project_name = "study-aws"
-environment  = "dev"
-aws_region   = "ap-northeast-1"
+project_name   = "study-aws"
+environment    = "dev"
+aws_region     = "ap-northeast-1"
 aws_account_id = "000000000000"
 
 skip_credentials_validation = true
