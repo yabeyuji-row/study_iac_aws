@@ -87,7 +87,8 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 # ALB target group に登録される Fargate service。
-# task は private subnet に置き、ALB security group からの通信だけを受ける。
+# task は通常 private subnet に置く。dev では NAT Gateway を避けるため public subnet
+# と public IP を選べるようにしている。
 resource "aws_ecs_service" "api" {
   name                               = "${local.name_prefix}-api-service"
   cluster                            = aws_ecs_cluster.api.id
@@ -104,9 +105,13 @@ resource "aws_ecs_service" "api" {
   }
 
   network_configuration {
-    subnets          = values(aws_subnet.private)[*].id
+    subnets = var.ecs_task_subnet_tier == "public" ? (
+      values(aws_subnet.public)[*].id
+      ) : (
+      values(aws_subnet.private)[*].id
+    )
     security_groups  = [aws_security_group.ecs.id]
-    assign_public_ip = false
+    assign_public_ip = var.ecs_assign_public_ip
   }
 
   load_balancer {

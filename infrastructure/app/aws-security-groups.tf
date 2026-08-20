@@ -77,6 +77,20 @@ resource "aws_vpc_security_group_egress_rule" "ecs_to_rds" {
   to_port     = var.db_port
 }
 
+# ECS タスクから AWS public endpoints などへの HTTPS egress。
+resource "aws_vpc_security_group_egress_rule" "ecs_https" {
+  #checkov:skip=CKV_AWS_382: dev では NAT/VPC endpoint を避けるため、ECR pull、CloudWatch Logs、Secrets Manager への HTTPS egress を明示的に許可する。
+  count = var.ecs_allow_https_egress ? 1 : 0
+
+  security_group_id = aws_security_group.ecs.id
+  description       = "Allow HTTPS egress for ECR, CloudWatch Logs, and Secrets Manager."
+
+  cidr_ipv4   = "0.0.0.0/0"
+  ip_protocol = "tcp"
+  from_port   = 443
+  to_port     = 443
+}
+
 # RDS PostgreSQL 用のセキュリティグループ。
 # ECS タスクからの PostgreSQL 通信だけを受ける。
 resource "aws_security_group" "rds" {
