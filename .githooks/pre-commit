@@ -19,7 +19,7 @@ format_tfvars_example() {
 
 printf 'Running pre-commit checks...\n'
 
-go_files="$(rg --files -g '*.go')"
+go_files="$(git ls-files '*.go')"
 if [ -n "$go_files" ]; then
 	# shellcheck disable=SC2086
 	run gofmt -w $go_files
@@ -31,11 +31,11 @@ run terraform -chdir=infrastructure/bootstrap fmt -recursive
 while IFS= read -r tfvars_example; do
 	[ -n "$tfvars_example" ] || continue
 	format_tfvars_example "$tfvars_example"
-done < <(rg --files -g '*.tfvars.example' infrastructure)
+done < <(git ls-files 'infrastructure/*.tfvars.example' 'infrastructure/**/*.tfvars.example')
 
 {
-	rg --files -0 -g '*.go'
-	rg --files -0 -g '*.tf' -g '*.tftest.hcl' -g '*.tfvars.example' infrastructure
+	git ls-files -z '*.go'
+	git ls-files -z 'infrastructure/*.tf' 'infrastructure/**/*.tf' 'infrastructure/*.tftest.hcl' 'infrastructure/**/*.tftest.hcl' 'infrastructure/*.tfvars.example' 'infrastructure/**/*.tfvars.example'
 } | xargs -0 -r git add --
 
 run make workflow-lint

@@ -6,6 +6,7 @@ resource "aws_ecr_repository" "api" {
   #checkov:skip=CKV_AWS_136: KMS key は鍵管理コストと運用設計が必要なため、8週目では AWS 管理の AES256 暗号化に留める。
   name                 = "${local.name_prefix}-${var.ecr_repository_name}"
   image_tag_mutability = "IMMUTABLE"
+  force_delete         = true
 
   # push された image を ECR 側でスキャンする。
   image_scanning_configuration {
