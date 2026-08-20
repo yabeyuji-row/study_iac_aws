@@ -12,6 +12,8 @@ locals {
   github_deploy_subject = "repo:${var.github_repository}:environment:${var.github_deploy_environment}"
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url = local.github_oidc_provider_url
 
@@ -196,13 +198,27 @@ data "aws_iam_policy_document" "github_ecs_deploy" {
     resources = [aws_ecs_service.api.id]
   }
 
-  #checkov:skip=CKV_AWS_356: GitHub deploy runs one-off migration tasks against the freshly registered task definition revision.
+  #checkov:skip=CKV_AWS_356: ecs:DescribeTasks may need broad task discovery after run-task returns a task ARN.
   statement {
     actions = [
       "ecs:DescribeTasks",
-      "ecs:RunTask",
     ]
     resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ecs:RunTask",
+    ]
+    resources = [
+      "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${aws_ecs_task_definition.api.family}:*",
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "ecs:cluster"
+      values   = [aws_ecs_cluster.api.arn]
+    }
   }
 
   #checkov:skip=CKV_AWS_356: ecs:RegisterTaskDefinition and ecs:DescribeTaskDefinition require Resource "*" in IAM.
