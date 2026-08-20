@@ -196,6 +196,15 @@ data "aws_iam_policy_document" "github_ecs_deploy" {
     resources = [aws_ecs_service.api.id]
   }
 
+  #checkov:skip=CKV_AWS_356: GitHub deploy runs one-off migration tasks against the freshly registered task definition revision.
+  statement {
+    actions = [
+      "ecs:DescribeTasks",
+      "ecs:RunTask",
+    ]
+    resources = ["*"]
+  }
+
   #checkov:skip=CKV_AWS_356: ecs:RegisterTaskDefinition and ecs:DescribeTaskDefinition require Resource "*" in IAM.
   statement {
     actions = [
