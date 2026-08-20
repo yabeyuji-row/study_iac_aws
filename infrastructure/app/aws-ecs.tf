@@ -128,5 +128,11 @@ resource "aws_ecs_service" "api" {
     }
   )
 
+  lifecycle {
+    ignore_changes = [
+      task_definition,
+    ]
+  }
+
   depends_on = [aws_lb_listener.http] # 明示的な依存関係
 }

@@ -83,7 +83,8 @@ ECS_TASK_DEFINITION_FAMILY
 ## 3. 最初のイメージを ECR に push する
 
 GitHub Actions の `Deploy` workflow を手動実行します。
-初回は `deploy = true` を指定すると、イメージ push 後に ECS service も更新します。
+初回は `deploy = true` と `migrate = true` を指定すると、イメージ push 後に
+database migration を one-off ECS task として実行し、ECS service も更新します。
 
 ローカルから直接 push する場合:
 
@@ -105,6 +106,7 @@ docker push "$image"
 ## 4. ECS service を更新する
 
 GitHub Actions の `Deploy` workflow を `deploy = true` で実行するのが標準です。
+DB schema を更新する場合は `migrate = true` も指定します。
 
 確認:
 
@@ -113,8 +115,6 @@ alb_dns_name="$(terraform -chdir=infrastructure/app output -raw alb_dns_name)"
 curl -fsS "http://${alb_dns_name}/healthz"
 curl -fsS "http://${alb_dns_name}/readyz"
 ```
-
-TODO API のテーブル作成は別途 migration が必要です。
 
 ## 削除
 

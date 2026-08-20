@@ -12,6 +12,11 @@ on:
         required: true
         default: false
         type: boolean
+      migrate:
+        description: Run database migrations before updating the ECS service.
+        required: true
+        default: true
+        type: boolean
 permissions:
   contents: read
   id-token: write
@@ -134,6 +139,59 @@ jobs:
               --output text
           )"
           echo "task_definition_arn=${task_definition_arn}" >> "$GITHUB_OUTPUT"
+
+      - name: Run database migrations
+        if: inputs.migrate
+        run: |
+          network="$(
+            aws ecs describe-services \
+              --cluster "$ECS_CLUSTER" \
+              --services "$ECS_SERVICE" \
+              --query 'services[0].networkConfiguration.awsvpcConfiguration'
+          )"
+          subnets="$(jq -r '.subnets | join(",")' <<< "$network")"
+          security_groups="$(jq -r '.securityGroups | join(",")' <<< "$network")"
+          assign_public_ip="$(jq -r '.assignPublicIp' <<< "$network")"
+          overrides="$(
+            jq -nc '{containerOverrides: [{name: "api", command: ["/migrate", "up"]}]}'
+          )"
+
+          task_arn="$(
+            aws ecs run-task \
+              --cluster "$ECS_CLUSTER" \
+              --launch-type FARGATE \
+              --task-definition "${{ steps.register.outputs.task_definition_arn }}" \
+              --network-configuration "awsvpcConfiguration={subnets=[$subnets],securityGroups=[$security_groups],assignPublicIp=$assign_public_ip}" \
+              --overrides "$overrides" \
+              --query 'tasks[0].taskArn' \
+              --output text
+          )"
+
+          if [ -z "$task_arn" ] || [ "$task_arn" = "None" ]; then
+            echo "migration task was not started"
+            exit 1
+          fi
+
+          aws ecs wait tasks-stopped \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "$task_arn"
+
+          exit_code="$(
+            aws ecs describe-tasks \
+              --cluster "$ECS_CLUSTER" \
+              --tasks "$task_arn" \
+              --query "tasks[0].containers[?name=='api'].exitCode | [0]" \
+              --output text
+          )"
+
+          if [ "$exit_code" != "0" ]; then
+            aws ecs describe-tasks \
+              --cluster "$ECS_CLUSTER" \
+              --tasks "$task_arn" \
+              --query "tasks[0].containers[?name=='api'].[exitCode,reason] | [0]" \
+              --output table
+            exit 1
+          fi
 
       - name: Update ECS service
         run: |
