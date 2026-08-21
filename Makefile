@@ -20,17 +20,23 @@ endif
 AIR ?= $(GO_BIN_DIR)/air
 ACTIONLINT_VERSION ?= v1.7.7
 MINISTACK_ENDPOINT ?= http://localhost:4566
-AWS_REGION ?= ap-northeast-1
-TFLINT ?= /home/yuji/.asdf/installs/golang/1.26.4/bin/tflint
+TFLINT ?= $(HOME)/.asdf/installs/golang/1.26.4/bin/tflint
 TERRAFORM_AWS_ACCESS_KEY_ID ?= test
 TERRAFORM_AWS_SECRET_ACCESS_KEY ?= test
 TERRAFORM_DIR ?= infrastructure/app
-TERRAFORM_TFVARS ?= $(TERRAFORM_DIR)/envs/dev.tfvars
+TERRAFORM_VAR_FILE ?= envs/dev.tfvars
+TERRAFORM_TFVARS ?= $(TERRAFORM_DIR)/$(TERRAFORM_VAR_FILE)
+tfvar = $(strip $(shell awk -F= -v key="$(1)" '$$1 ~ "^[[:space:]]*" key "[[:space:]]*$$" { value=$$2; sub(/#.*/, "", value); sub(/^[[:space:]]+/, "", value); sub(/[[:space:]]+$$/, "", value); sub(/^"/, "", value); sub(/"$$/, "", value); print value; exit }' "$(TERRAFORM_TFVARS)" 2>/dev/null))
+PROJECT_NAME ?= $(or $(call tfvar,project_name),study-aws)
+ENVIRONMENT ?= $(or $(call tfvar,environment),dev)
+NAME_PREFIX ?= $(PROJECT_NAME)-$(ENVIRONMENT)
+AWS_REGION ?= $(or $(call tfvar,aws_region),ap-northeast-1)
 TERRAFORM_DESTROY_PLAN ?= destroy.tfplan
-ECR_REPOSITORY_NAME ?= study-aws-dev-todo-api
-ECS_CLUSTER_NAME ?= study-aws-dev-cluster
-ECS_SERVICE_NAME ?= study-aws-dev-api-service
-RDS_INSTANCE_IDENTIFIER ?= study-aws-dev-postgres
+ECR_REPOSITORY_SHORT_NAME ?= $(or $(call tfvar,ecr_repository_name),todo-api)
+ECR_REPOSITORY_NAME ?= $(NAME_PREFIX)-$(ECR_REPOSITORY_SHORT_NAME)
+ECS_CLUSTER_NAME ?= $(NAME_PREFIX)-cluster
+ECS_SERVICE_NAME ?= $(NAME_PREFIX)-api-service
+RDS_INSTANCE_IDENTIFIER ?= $(NAME_PREFIX)-postgres
 ROVER_IMAGE ?= im2nguyen/rover:latest
 ROVER_PORT ?= 9000
 INFRAMAP ?= inframap
@@ -154,12 +160,12 @@ terraform-plan:
 	AWS_ACCESS_KEY_ID="$(TERRAFORM_AWS_ACCESS_KEY_ID)" \
 	AWS_SECRET_ACCESS_KEY="$(TERRAFORM_AWS_SECRET_ACCESS_KEY)" \
 	AWS_EC2_METADATA_DISABLED=true \
-	terraform -chdir=infrastructure/app plan -input=false -refresh=false -var-file=envs/dev.tfvars
+	terraform -chdir="$(TERRAFORM_DIR)" plan -input=false -refresh=false -var-file="$(TERRAFORM_VAR_FILE)"
 
 terraform-destroy-plan:
 	bash -c 'set -euo pipefail; \
 		if [ -f .env.aws ]; then source .env.aws; fi; \
-		terraform -chdir="$(TERRAFORM_DIR)" plan -destroy -var-file=envs/dev.tfvars -out="$(TERRAFORM_DESTROY_PLAN)"'
+		terraform -chdir="$(TERRAFORM_DIR)" plan -destroy -var-file="$(TERRAFORM_VAR_FILE)" -out="$(TERRAFORM_DESTROY_PLAN)"'
 
 terraform-destroy-apply:
 	bash -c 'set -euo pipefail; \
@@ -224,7 +230,7 @@ terraform-rover:
 		AWS_ACCESS_KEY_ID="$(TERRAFORM_AWS_ACCESS_KEY_ID)" \
 		AWS_SECRET_ACCESS_KEY="$(TERRAFORM_AWS_SECRET_ACCESS_KEY)" \
 		AWS_EC2_METADATA_DISABLED=true \
-		terraform -chdir="$(TERRAFORM_DIR)" plan -no-color -input=false -refresh=false -var-file=envs/dev.tfvars -out=.rover-tmp/rover.tfplan > "$$workdir/terraform-plan.log" || { cat "$$workdir/terraform-plan.log"; exit 1; }; \
+		terraform -chdir="$(TERRAFORM_DIR)" plan -no-color -input=false -refresh=false -var-file="$(TERRAFORM_VAR_FILE)" -out=.rover-tmp/rover.tfplan > "$$workdir/terraform-plan.log" || { cat "$$workdir/terraform-plan.log"; exit 1; }; \
 		terraform -chdir="$(TERRAFORM_DIR)" show -json .rover-tmp/rover.tfplan > "$$workdir/rover-plan.json"; \
 		echo "Rover URL: http://localhost:$(ROVER_PORT)"; \
 		docker run --rm -p "$(ROVER_PORT):9000" \
