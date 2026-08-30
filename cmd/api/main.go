@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 
 	"study_iac_aws/internal/config"
 	"study_iac_aws/internal/database"
+	"study_iac_aws/internal/observability"
 	"study_iac_aws/internal/todo"
 	"study_iac_aws/internal/web"
 )
@@ -77,6 +79,18 @@ func run(ctx context.Context) (err error) {
 	}
 	defer pool.Close()
 
+	shutdownTracing, err := observability.ConfigureTracing(ctx, cfg.OTELExporterEndpoint)
+	if err != nil {
+		return fmt.Errorf("configure tracing: %w", err)
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if shutdownErr := shutdownTracing(shutdownCtx); shutdownErr != nil {
+			slog.Error("shutdown tracing", "error", shutdownErr)
+		}
+	}()
+
 	repository := todo.NewPostgresRepository(pool)
 	service := todo.NewService(repository, time.Now)
 	handler := todo.NewHandler(service)
@@ -85,7 +99,7 @@ func run(ctx context.Context) (err error) {
 		Version:   version,
 		Commit:    commit,
 		BuildTime: buildTime,
-	})
+	}, cfg.FaultInjection)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -134,10 +148,14 @@ func newEchoServer(
 	todoHandler *todo.Handler,
 	pinger databasePinger,
 	info buildInfo,
+	faultInjection bool,
 ) (echoServer *echo.Echo) {
 	echoServer = echo.New()
 	echoServer.HideBanner = true
+	metrics := observability.NewHTTPMetrics()
 	echoServer.Use(requestLogMiddleware())
+	echoServer.Use(otelecho.Middleware("todo-api"))
+	echoServer.Use(observability.HTTPMiddleware(metrics))
 
 	healthHandler := func(echoContext echo.Context) error {
 		return echoContext.JSON(http.StatusOK, map[string]string{
@@ -166,11 +184,45 @@ func newEchoServer(
 	echoServer.GET("/version", func(echoContext echo.Context) error {
 		return echoContext.JSON(http.StatusOK, info)
 	})
+	echoServer.GET("/metrics", echo.WrapHandler(metrics.Handler()))
+	if faultInjection {
+		registerFaultInjectionRoutes(echoServer)
+	}
 
 	todoHandler.Register(echoServer.Group("/v1"))
 	echoServer.Any("/*", echo.WrapHandler(web.Handler()))
 
 	return echoServer
+}
+
+func registerFaultInjectionRoutes(echoServer *echo.Echo) {
+	const requiredHeader = "X-Fault-Injection"
+	requireOptIn := func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(echoContext echo.Context) error {
+			if echoContext.Request().Header.Get(requiredHeader) != "enabled" {
+				return echoContext.JSON(http.StatusForbidden, map[string]string{"error": "fault injection opt-in required"})
+			}
+			return next(echoContext)
+		}
+	}
+
+	group := echoServer.Group("/debug/fault", requireOptIn)
+	group.GET("/5xx", func(echoContext echo.Context) error {
+		return echoContext.JSON(http.StatusInternalServerError, map[string]string{"error": "injected failure"})
+	})
+	group.GET("/delay", func(echoContext echo.Context) error {
+		const maxDelay = 5 * time.Second
+		delay, err := time.ParseDuration(echoContext.QueryParam("duration"))
+		if err != nil || delay < 0 || delay > maxDelay {
+			return echoContext.JSON(http.StatusBadRequest, map[string]string{"error": "duration must be between 0s and 5s"})
+		}
+		select {
+		case <-time.After(delay):
+			return echoContext.JSON(http.StatusOK, map[string]string{"status": "delayed"})
+		case <-echoContext.Request().Context().Done():
+			return echoContext.Request().Context().Err()
+		}
+	})
 }
 
 func requestLogMiddleware() echo.MiddlewareFunc {

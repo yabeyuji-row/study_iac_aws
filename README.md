@@ -5,7 +5,7 @@ GitHub Actions、オブザーバビリティ、SRE、セキュリティ、バッ
 リカバリ、コスト管理を使って、本番環境に近い TODO REST API を段階的に
 構築するための学習プロジェクトです。
 
-現在のフェーズ: Phase 5、SRE と運用。
+現在のフェーズ: Phase 6、Observability and Reliability Lab。
 
 ## アーキテクチャ
 
@@ -23,15 +23,13 @@ Amazon RDS for PostgreSQL
 
 ## ローカル起動
 
-PostgreSQL と MiniStack を起動し、マイグレーションを実行してから API を
-起動します。
+PostgreSQL と MiniStack を起動し、マイグレーションを実行してから API を起動します。
 
 ```bash
 make local-up
 ```
 
-API はフォアグラウンドで起動します。`Ctrl+C` で停止してから、PostgreSQL と
-MiniStack を停止します。
+API はフォアグラウンドで起動します。`Ctrl+C` で停止してから、PostgreSQL とMiniStack を停止します。
 
 ```bash
 make local-down
@@ -307,6 +305,38 @@ CloudWatch アラーム、CloudWatch ダッシュボードを使用します。
 最終的なリカバリ訓練とレビュー記録については、
 [Week 12 最終レビュー](docs/operations/week12-final-review.md) を参照してください。
 
+## Observability Lab
+
+Phase 6 では、ローカルだけで API、PostgreSQL、Prometheus、Grafana、Tempo、
+OpenTelemetry Collector を起動し、負荷と障害を安全に再現できます。
+
+```bash
+make observability-up
+make loadtest
+make fault-5xx
+make fault-delay FAULT_DELAY=2s
+make fault-db-down
+curl -i http://localhost:8080/readyz
+make fault-db-recover
+make observability-down
+```
+
+Grafana は `http://localhost:3000`、Prometheus は `http://localhost:9090`、API metrics は
+`http://localhost:8080/metrics` です。障害注入ルートは Observability Lab の API でのみ
+有効になり、さらに `X-Fault-Injection: enabled` が必要です。
+
+設計と演習手順は [Observability and Reliability Lab](docs/design/observability-reliability-lab.md)
+を参照してください。
+
+## このリポジトリで説明できるスキル
+
+- Echo v4 と PostgreSQL を使った Go REST API のレイヤー設計、テスト、migration。
+- Docker でのローカル再現と、Terraform による ALB、ECS Fargate、RDS、IAM の設計。
+- GitHub Actions OIDC、品質ゲート、段階的 deploy と rollback の判断。
+- logs、metrics、traces を関連付けた SLI/SLO、error budget、dashboard、alert の設計。
+- k6 負荷試験、安全な障害注入、runbook に沿った復旧、postmortem と再発防止。
+- backward-compatible migration、backup/PITR、drift、security、AWS cost を含む運用判断。
+
 ## コストに関する注意
 
 対象リソースと概算コストを確認する前に、AWS リソースを作成しないでください。
@@ -315,6 +345,7 @@ ALB、NAT Gateway、RDS、VPC endpoint、CloudWatch Logs、Secrets Manager、
 
 ## 設計ドキュメント
 
+- [用語集](docs/glossary.md)
 - [システム概要](docs/design/system-overview.md)
 - [API 設計](docs/design/api-design.md)
 - [データベース設計](docs/design/database-design.md)

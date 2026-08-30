@@ -10,12 +10,19 @@ import (
 )
 
 type Config struct {
-	HTTPAddr    string
-	DatabaseURL string
+	HTTPAddr             string
+	DatabaseURL          string
+	OTELExporterEndpoint string
+	FaultInjection       bool
 }
 
 func Load() (cfg Config, err error) {
 	cfg.HTTPAddr = getenv("HTTP_ADDR", ":8080")
+	cfg.OTELExporterEndpoint = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	cfg.FaultInjection, err = strconv.ParseBool(getenv("FAULT_INJECTION_ENABLED", "false"))
+	if err != nil {
+		return cfg, fmt.Errorf("parse FAULT_INJECTION_ENABLED: %w", err)
+	}
 	cfg.DatabaseURL, err = loadDatabaseURL()
 	if err != nil {
 		return cfg, err

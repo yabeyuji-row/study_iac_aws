@@ -1,0 +1,16 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"type":"timeseries","title":"Request rate","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"expr":"sum(rate(todo_api_http_requests_total{route!~\"/metrics|/healthz|/readyz\"}[1m])) by (route, status)","legendFormat":"{{route}} {{status}}","refId":"A"}],"gridPos":{"h":8,"w":12,"x":0,"y":0}},
+    {"type":"timeseries","title":"5xx rate","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"expr":"sum(rate(todo_api_http_requests_total{status=~\"5..\"}[1m])) / clamp_min(sum(rate(todo_api_http_requests_total[1m])), 0.001)","legendFormat":"5xx ratio","refId":"A"}],"gridPos":{"h":8,"w":12,"x":12,"y":0}},
+    {"type":"timeseries","title":"Latency p95","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"expr":"histogram_quantile(0.95, sum(rate(todo_api_http_request_duration_seconds_bucket[5m])) by (le, route))","legendFormat":"{{route}}","refId":"A"}],"gridPos":{"h":8,"w":24,"x":0,"y":8}}
+  ],
+  "schemaVersion": 41,
+  "tags": ["phase6", "slo"],
+  "templating": {"list": []},
+  "time": {"from":"now-30m","to":"now"},
+  "title": "TODO API Observability Lab",
+  "uid": "todo-api-lab",
+  "version": 1
+}

@@ -5,6 +5,9 @@
 11週目では、CloudWatch Logs、CloudWatch Metrics、CloudWatch Alarms、CloudWatch Dashboard を使って、
 API、ALB、ECS、RDS の初期 observability を作る。
 
+Phase 6 のローカル metrics/tracing と障害演習は
+[Observability and Reliability Lab](observability-reliability-lab.md) に定義する。
+
 AWS 公式ドキュメントでは、Application Load Balancer は `AWS/ApplicationELB` metrics を CloudWatch に発行し、
 RDS は 1 分間隔の CloudWatch metrics を発行する。
 ECS の `RunningTaskCount` は Container Insights の `ECS/ContainerInsights` metric として扱う。
