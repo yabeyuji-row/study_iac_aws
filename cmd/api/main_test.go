@@ -34,7 +34,7 @@ func TestOperationalEndpoints(t *testing.T) {
 		Version:   "test-version",
 		Commit:    "test-commit",
 		BuildTime: "test-build-time",
-	})
+	}, false)
 
 	tests := []struct {
 		name       string
@@ -96,7 +96,7 @@ func TestReadyReturnsUnavailableWhenDatabasePingFails(t *testing.T) {
 	echoServer := newEchoServer(
 		todoHandler,
 		fakePinger{err: errors.New("database unavailable")},
-		buildInfo{},
+		buildInfo{}, false,
 	)
 
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
@@ -121,7 +121,7 @@ func TestRequestLogMiddlewareEmitsMetricFields(t *testing.T) {
 	})
 
 	todoHandler := todo.NewHandler(todo.NewService(fakeRepository{}, time.Now))
-	echoServer := newEchoServer(todoHandler, fakePinger{}, buildInfo{})
+	echoServer := newEchoServer(todoHandler, fakePinger{}, buildInfo{}, false)
 
 	request := httptest.NewRequest(http.MethodGet, "/healthz?ignored=true", nil)
 	request.RemoteAddr = "192.0.2.10:12345"
@@ -144,6 +144,57 @@ func TestRequestLogMiddlewareEmitsMetricFields(t *testing.T) {
 	}
 	if _, ok := entry["duration_ms"].(float64); !ok {
 		t.Fatalf("duration_ms = %T, want number", entry["duration_ms"])
+	}
+}
+
+func TestFaultInjectionRoutesAreDisabledByDefault(t *testing.T) {
+	todoHandler := todo.NewHandler(todo.NewService(fakeRepository{}, time.Now))
+	echoServer := newEchoServer(todoHandler, fakePinger{}, buildInfo{}, false)
+	request := httptest.NewRequest(http.MethodGet, "/debug/fault/5xx", nil)
+	recorder := httptest.NewRecorder()
+
+	echoServer.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+	}
+}
+
+func TestFaultInjectionRequiresExplicitHeader(t *testing.T) {
+	todoHandler := todo.NewHandler(todo.NewService(fakeRepository{}, time.Now))
+	echoServer := newEchoServer(todoHandler, fakePinger{}, buildInfo{}, true)
+
+	withoutHeader := httptest.NewRequest(http.MethodGet, "/debug/fault/5xx", nil)
+	withoutHeaderRecorder := httptest.NewRecorder()
+	echoServer.ServeHTTP(withoutHeaderRecorder, withoutHeader)
+	if withoutHeaderRecorder.Code != http.StatusForbidden {
+		t.Fatalf("status without header = %d, want %d", withoutHeaderRecorder.Code, http.StatusForbidden)
+	}
+
+	withHeader := httptest.NewRequest(http.MethodGet, "/debug/fault/5xx", nil)
+	withHeader.Header.Set("X-Fault-Injection", "enabled")
+	withHeaderRecorder := httptest.NewRecorder()
+	echoServer.ServeHTTP(withHeaderRecorder, withHeader)
+	if withHeaderRecorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status with header = %d, want %d", withHeaderRecorder.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestMetricsEndpointExposesHTTPMetrics(t *testing.T) {
+	todoHandler := todo.NewHandler(todo.NewService(fakeRepository{}, time.Now))
+	echoServer := newEchoServer(todoHandler, fakePinger{}, buildInfo{}, false)
+
+	healthRequest := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	echoServer.ServeHTTP(httptest.NewRecorder(), healthRequest)
+	metricsRequest := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	metricsRecorder := httptest.NewRecorder()
+	echoServer.ServeHTTP(metricsRecorder, metricsRequest)
+
+	if metricsRecorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", metricsRecorder.Code, http.StatusOK)
+	}
+	if !strings.Contains(metricsRecorder.Body.String(), `todo_api_http_requests_total{method="GET",route="/healthz",status="200"} 1`) {
+		t.Fatalf("metrics body does not contain health request: %s", metricsRecorder.Body.String())
 	}
 }
 

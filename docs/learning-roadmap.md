@@ -1,4 +1,4 @@
-# 12週間の学習ロードマップ
+# 12週間の学習ロードマップと Phase 6
 
 ## 操作場所の表記
 
@@ -755,3 +755,42 @@ AWS 上で実リソースを変更する操作は、対象リソース、概算�
 
 - [ ] 12-4-4. [AWS] cost review checklist と cleanup checklist を AWS console または AWS CLI で実行し、残課金 resource と削除予定を記録する。
 	- `terraform destroy` は明示的な承認後のみ実行する。
+
+## Phase 6: Observability and Reliability Lab
+
+### 要件
+
+- テーマ: ローカルで観測、負荷、障害、復旧を一つのループとして経験する。
+- Go: OpenTelemetry tracing、Prometheus metrics、dev/test 限定の障害注入。
+- PostgreSQL: readiness failure と migration compatibility の演習。
+- AWS: 実 resource は変更せず、CloudWatch へ展開する場合の対応関係だけを設計する。
+- SRE: SLI/SLO、error budget、alert、dashboard、runbook、postmortem。
+- 完了条件: `make observability-up` から負荷試験、障害注入、復旧確認までローカルで再現できる。
+- 工数: 12-20 時間。
+- AWS コスト: なし。
+- 戻し方: `make observability-down`。障害注入は通常構成で無効。
+
+### 実装
+
+- [x] 6-1. [ローカル] API に低カーディナリティの request count と latency histogram を追加し、`/metrics` で公開する。
+- [x] 6-2. [ローカル] OTLP endpoint が設定された場合だけ OpenTelemetry trace を export する。
+- [x] 6-3. [ローカル] Prometheus、Grafana、Tempo、OpenTelemetry Collector の Compose override と自動 provisioning を追加する。
+- [x] 6-4. [ローカル] k6 smoke load test と SLO に対応する threshold を追加する。
+- [x] 6-5. [ローカル] 5xx と最大5秒の遅延を、環境変数と専用 header で保護された endpoint から注入する。
+- [x] 6-6. [ローカル] PostgreSQL 停止による DB readiness failure の操作と復旧 target を追加する。
+- [x] 6-7. [ローカル] SLI/SLO、alert、dashboard、runbook、postmortem、rollback/migration safety を文書化する。
+
+### 検証と演習
+
+- [x] 6-8. [ローカル] `make observability-up` と `make loadtest` を実行し、Grafana で request rate と p95 latency を確認する。
+- [x] 6-9. [ローカル] `make fault-5xx` を実行し、5xx metric、trace、runbook の調査導線を確認する。
+- [x] 6-10. [ローカル] `make fault-delay FAULT_DELAY=2s` を実行し、latency SLO 違反を確認する。
+- [x] 6-11. [ローカル] `make fault-db-down` 後に `/healthz` は 200、`/readyz` は 503 になることを確認し、`make fault-db-recover` で復旧する。
+- [ ] 6-12. [ローカル] postmortem exercise を実施し、検出時間、緩和時間、再発防止 action を記録する。
+
+### 次の拡張
+
+- [ ] 6-13. repository span と DB pool metrics を追加し、HTTP trace から DB 処理を追えるようにする。
+- [ ] 6-14. trace ID を structured log に含め、logs、metrics、traces の相互遷移を作る。
+- [ ] 6-15. multi-window burn-rate alert を recording rule とテストで実装する。
+- [ ] 6-16. AWS へ展開する場合は ADOT/CloudWatch/X-Ray の費用、権限、sampling、rollback を設計し、別途承認を得る。
